@@ -35,7 +35,8 @@ namespace HRMS_Backend.Controllers
         private readonly IRecruitmentNoticePeriodService _recruitmentNoticePeriodService;
         private readonly IScreeningResultService _screeningResultService;
         private readonly IInterviewLevelService _interviewLevelService;
-        public MasterDataController(IRecruitmentNoticePeriodService recruitmentNoticePeriodService, IScreeningResultService screeningResultService, IInterviewLevelService interviewLevelService,ICompanyNewsPolicyService companyNewsPolicyService,IModeOfStudyService modeOfStudyService,IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, IPriorityService priorityService)
+        private readonly ICompanyNewsCategoryService _companyNewsCategoryService;
+        public MasterDataController(IRecruitmentNoticePeriodService recruitmentNoticePeriodService, IScreeningResultService screeningResultService, IInterviewLevelService interviewLevelService,ICompanyNewsPolicyService companyNewsPolicyService,IModeOfStudyService modeOfStudyService,IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, IPriorityService priorityService, ICompanyNewsCategoryService companyNewsCategoryService)
         {
             _service = service;
             _Eventservice = Eventservice;
@@ -64,6 +65,7 @@ namespace HRMS_Backend.Controllers
             _recruitmentNoticePeriodService = recruitmentNoticePeriodService;
             _screeningResultService = screeningResultService;
             _interviewLevelService = interviewLevelService;
+            _companyNewsCategoryService = companyNewsCategoryService;
         }
         #region InterviewLevels
 
@@ -1681,5 +1683,39 @@ int regionId)
 
         #endregion
 
+        [HttpGet("companynewscategory-list/{userId}")]
+        public async Task<IActionResult> GetCompanyNewsCategoryList(int userId)
+        {
+            var data = await _companyNewsCategoryService.GetAllCompanyNewsCategoryAsync(userId);
+            return Ok(data);
+        }
+
+        [HttpPost("CreateCompanyNewsCategory")]
+        public async Task<IActionResult> CreateCompanyNewsCategory([FromBody] CategoryDto dto)
+        {
+            var result = await _companyNewsCategoryService.CreateCompanyNewsCategoryAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateCompanyNewsCategory")]
+        public async Task<IActionResult> UpdateCompanyNewsCategory(CategoryDto dto)
+        {
+            var result = await _companyNewsCategoryService.UpdateCompanyNewsCategoryAsync(dto.CategoryId, dto);
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteCompanyNewsCategory")]
+        public async Task<IActionResult> DeleteCompanyNewsCategory(int id)
+        {
+            var result = await _companyNewsCategoryService.DeleteCompanyNewsCategoryAsync(id);
+            return Ok(result);
+        }
+
+        [HttpGet("companynewscategory-by-company-region")]
+        public async Task<IActionResult> GetCompanyNewsCategoryByCompanyRegion(int companyId, int regionId)
+        {
+            var data = await _companyNewsCategoryService.GetCategoriesByCompanyRegion(companyId, regionId);
+            return Ok(data);
+        }
     }
 }
