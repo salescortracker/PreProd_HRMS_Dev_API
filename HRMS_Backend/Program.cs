@@ -95,6 +95,7 @@ builder.Services.AddScoped<IRecruitmentNoticePeriodService, RecruitmentNoticePer
 builder.Services.AddScoped<IScreeningResultService, ScreeningResultService>();
 builder.Services.AddScoped<IInterviewLevelService, InterviewLevelService>();
 builder.Services.AddScoped<ICompanyEventsService, CompanyEventsService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<ICompanyNewsCategoryService, CompanyNewsCategoryService>();
 var app = builder.Build();
 
