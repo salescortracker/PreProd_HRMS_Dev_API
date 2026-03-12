@@ -16,6 +16,6 @@ namespace BusinessLayer.Interfaces
             int managerUserId,
             string action   // "Approve" or "Reject"
         );
-
+        Task ApproveRejectAssetsAsync(ApproveRejectAssetDto dto);
     }
 }
