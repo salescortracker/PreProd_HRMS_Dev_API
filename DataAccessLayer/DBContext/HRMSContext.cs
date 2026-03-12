@@ -51,6 +51,8 @@ public partial class HRMSContext : DbContext
 
     public virtual DbSet<CandidateOffer> CandidateOffers { get; set; }
 
+    public virtual DbSet<CandidateOnboarding> CandidateOnboardings { get; set; }
+
     public virtual DbSet<CandidateQualification> CandidateQualifications { get; set; }
 
     public virtual DbSet<CandidateScreening> CandidateScreenings { get; set; }
@@ -96,6 +98,8 @@ public partial class HRMSContext : DbContext
     public virtual DbSet<Employee> Employees { get; set; }
 
     public virtual DbSet<EmployeeAssetFilterMaster> EmployeeAssetFilterMasters { get; set; }
+
+    public virtual DbSet<EmployeeAttendance> EmployeeAttendances { get; set; }
 
     public virtual DbSet<EmployeeBankDetail> EmployeeBankDetails { get; set; }
 
@@ -737,6 +741,32 @@ public partial class HRMSContext : DbContext
                 .HasConstraintName("FK_CandidateOffers_Candidate");
         });
 
+        modelBuilder.Entity<CandidateOnboarding>(entity =>
+        {
+            entity.HasKey(e => e.OnboardingId).HasName("PK__Candidat__43F2373EF6999036");
+
+            entity.ToTable("CandidateOnboarding", "Recruitment");
+
+            entity.Property(e => e.BackgroundCheckStatus)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("Pending");
+            entity.Property(e => e.BuddyAssigned)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.ModifiedAt).HasColumnType("datetime");
+            entity.Property(e => e.OnboardingStatus)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("InProgress");
+
+            entity.HasOne(d => d.Candidate).WithMany(p => p.CandidateOnboardings)
+                .HasForeignKey(d => d.CandidateId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CandidateOnboarding_Candidate");
+        });
+
         modelBuilder.Entity<CandidateQualification>(entity =>
         {
             entity.HasKey(e => e.QualificationId).HasName("PK__Candidat__C95C12AA6D40FE2C");
@@ -792,9 +822,6 @@ public partial class HRMSContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
-            entity.Property(e => e.Description)
-                .HasMaxLength(500)
-                .IsUnicode(false);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.ModifiedAt).HasColumnType("datetime");
             entity.Property(e => e.RegionId).HasColumnName("RegionID");
@@ -1174,6 +1201,26 @@ public partial class HRMSContext : DbContext
             entity.Property(e => e.Location).HasMaxLength(200);
             entity.Property(e => e.ModifiedAt).HasColumnType("datetime");
             entity.Property(e => e.ModifiedBy).HasMaxLength(200);
+            entity.Property(e => e.Status).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<EmployeeAttendance>(entity =>
+        {
+            entity.HasKey(e => e.AttendanceId).HasName("PK__Employee__8B69261CF0CBA33D");
+
+            entity.ToTable("EmployeeAttendance", "attendance");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.EmployeeCode).HasMaxLength(50);
+            entity.Property(e => e.EmployeeName).HasMaxLength(200);
+            entity.Property(e => e.ModifiedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.ModifiedBy)
+                .HasMaxLength(200)
+                .IsUnicode(false);
             entity.Property(e => e.Status).HasMaxLength(50);
         });
 
@@ -3276,6 +3323,8 @@ public partial class HRMSContext : DbContext
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.DemoExpiryDate).HasColumnType("datetime");
+            entity.Property(e => e.DemoStartDate).HasColumnType("datetime");
             entity.Property(e => e.DepartmentId).HasColumnName("departmentId");
             entity.Property(e => e.Designation).HasMaxLength(100);
             entity.Property(e => e.Email)

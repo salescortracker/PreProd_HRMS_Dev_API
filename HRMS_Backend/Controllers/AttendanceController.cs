@@ -1,4 +1,5 @@
 ﻿using BusinessLayer.DTOs;
+using BusinessLayer.Implementations;
 using BusinessLayer.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,8 +16,9 @@ namespace HRMS_Backend.Controllers
         private readonly IWorkFromHomeRequestService _workfromhomeservice;
         private readonly ICompanyNewsService _companyNewsService;
         private readonly ICompanyPolicyService _companyPolicyService;
+        private readonly IAttendanceService _attendanceService;
 
-        public AttendanceController(ICompanyPolicyService companyPolicyService,IShiftAllocationService shiftAllocationService, IClockInOutService clockInOutService, ITimesheetService timesheetService, IMissedPunchService service,IWorkFromHomeRequestService workfromhomeservice, ICompanyNewsService companyNewsService)
+        public AttendanceController(ICompanyPolicyService companyPolicyService,IShiftAllocationService shiftAllocationService, IClockInOutService clockInOutService, ITimesheetService timesheetService, IMissedPunchService service,IWorkFromHomeRequestService workfromhomeservice, ICompanyNewsService companyNewsService, IAttendanceService attendanceService)
         {
             
             _shiftAllocationService = shiftAllocationService;
@@ -26,6 +28,7 @@ namespace HRMS_Backend.Controllers
             _workfromhomeservice = workfromhomeservice;
             _companyNewsService = companyNewsService;
             _companyPolicyService = companyPolicyService;
+            _attendanceService = attendanceService;
         }
         #region ShiftAllocation
 
@@ -570,6 +573,52 @@ namespace HRMS_Backend.Controllers
         {
             return Ok(await _companyPolicyService.DeletePolicy(policyId));
         }
+        #endregion
+
+
+
+        #region All Employees AttendaceS & ReportS 
+
+        [HttpGet("GetEmployees")]
+        public async Task<IActionResult> GetEmployees(int companyId, int regionId)
+        {
+            var result = await _attendanceService.GetTodayEmployees(companyId, regionId);
+            return Ok(result);
+        }
+
+        [HttpPost("SaveAttendance")]
+        public async Task<IActionResult> SaveAttendance([FromBody] SaveAttendanceDto dto)
+        {
+            var userId = int.Parse(User.FindFirst("UserId")?.Value ?? "0");
+
+            await _attendanceService.SaveAttendanceAsync(dto, userId);
+
+            return Ok(new { message = "Attendance saved successfully" });
+        }
+
+        [HttpGet("DateRangeReport")]
+        public async Task<IActionResult> DateRangeReport(int companyId,int regionId,DateTime fromDate,DateTime toDate)
+        {
+            var result = await _attendanceService
+                .GetDateRangeReport(companyId, regionId, fromDate, toDate);
+
+            return Ok(result);
+        }
+
+        [HttpGet("WeeklyReport")]
+        public async Task<IActionResult> WeeklyReport(int companyId, int regionId)
+        {
+            var result = await _attendanceService.GetWeeklyReport(companyId, regionId);
+            return Ok(result);
+        }
+
+        [HttpGet("MonthlyReport")]
+        public async Task<IActionResult> MonthlyReport(int companyId, int regionId)
+        {
+            var result = await _attendanceService.GetMonthlyReport(companyId, regionId);
+            return Ok(result);
+        }
+
         #endregion
     }
 }
