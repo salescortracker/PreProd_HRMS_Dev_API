@@ -65,6 +65,32 @@ namespace BusinessLayer.Implementations
         }
         public async Task<int> SubmitLeaveAsync(LeaveRequestDto dto)
         {
+
+            // ✅ Get Weekoffs for company + region
+            var weekoffs = await _unitOfWork.Repository<Weekoff>()
+                .FindAsync(x => !x.IsDeleted &&
+                                x.CompanyId == dto.CompanyId &&
+                                x.RegionId == dto.RegionId &&
+                                x.IsActive);
+
+            int totalDays = 0;
+
+            DateTime current = dto.StartDate;
+
+            while (current <= dto.EndDate)
+            {
+                string dayName = current.DayOfWeek.ToString();
+
+                bool isWeekoff = weekoffs.Any(x => x.Weekoff1 == dayName);
+
+                if (!isWeekoff)
+                    totalDays++;
+
+                current = current.AddDays(1);
+            }
+
+            // ✅ Override frontend value
+            dto.TotalDays = totalDays;
             var entity = new LeaveRequest
             {
                 UserId = dto.UserId,
