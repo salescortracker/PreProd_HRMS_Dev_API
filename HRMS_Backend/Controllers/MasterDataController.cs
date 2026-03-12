@@ -35,7 +35,8 @@ namespace HRMS_Backend.Controllers
         private readonly IRecruitmentNoticePeriodService _recruitmentNoticePeriodService;
         private readonly IScreeningResultService _screeningResultService;
         private readonly IInterviewLevelService _interviewLevelService;
-        public MasterDataController(IRecruitmentNoticePeriodService recruitmentNoticePeriodService, IScreeningResultService screeningResultService, IInterviewLevelService interviewLevelService,ICompanyNewsPolicyService companyNewsPolicyService,IModeOfStudyService modeOfStudyService,IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, IPriorityService priorityService)
+        private readonly IAccountTypeService _accountTypeService;
+        public MasterDataController(IAccountTypeService accountTypeService,IRecruitmentNoticePeriodService recruitmentNoticePeriodService, IScreeningResultService screeningResultService, IInterviewLevelService interviewLevelService,ICompanyNewsPolicyService companyNewsPolicyService,IModeOfStudyService modeOfStudyService,IEventService Eventservice,IResignationService resignationService,IPolicyCategoryService policyCategoryService,ILeaveStatusService leaveStatusService,IHolidayListService holidayListService, IWeekoffService weekoffService,IAttendanceStatusService attendanceStatusService, IExpenseCategoryService expenseCategoryservice,IDepartmentService service, IDesignationService designationService, IGenderService genderService,IadminService adminService, ILeaveTypeService leaveTypeService,  ILogger<MasterDataController> logger, IKpiCategoryService kpiCategoryService, IEmployeeMasterService employeeService, ICertificationTypeService certificationTypeService, IAssetStatusService assetStatusService, IBloodGroupService bloodGroupService, IHelpdeskCategoryAdminService helpdeskCategoryAdminService, IProjectStatusAdminService projectStatusAdminService, IPriorityService priorityService)
         {
             _service = service;
             _Eventservice = Eventservice;
@@ -64,6 +65,7 @@ namespace HRMS_Backend.Controllers
             _recruitmentNoticePeriodService = recruitmentNoticePeriodService;
             _screeningResultService = screeningResultService;
             _interviewLevelService = interviewLevelService;
+            _accountTypeService = accountTypeService;
         }
         #region InterviewLevels
 
@@ -1681,5 +1683,53 @@ int regionId)
 
         #endregion
 
+
+        #region AccountType
+
+        [HttpGet("account-type-list")]
+        public async Task<IActionResult> GetAccountTypes([FromQuery] int userId)
+        {
+            var result = await _accountTypeService.GetAll(userId);
+            return Ok(result);
+        }
+
+        [HttpGet("account-type-by-company-region")]
+        public async Task<IActionResult> GetAccountTypesByCompanyRegion(
+    [FromQuery] int companyId,
+    [FromQuery] int regionId)
+        {
+            var result = await _accountTypeService.GetByCompanyRegion(companyId, regionId);
+            return Ok(result);
+        }
+
+        [HttpGet("account-type/{id:int}")]
+        public async Task<IActionResult> GetAccountTypeById(int id)
+        {
+            var result = await _accountTypeService.GetByIdAsync(id);
+            return Ok(result);
+        }
+
+        [HttpPost("CreateAccountType")]
+        public async Task<IActionResult> CreateAccountType([FromBody] AccountTypeDto dto)
+        {
+            var result = await _accountTypeService.CreateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateAccountType")]
+        public async Task<IActionResult> UpdateAccountType([FromBody] AccountTypeDto dto)
+        {
+            var result = await _accountTypeService.UpdateAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteAccountType")]
+        public async Task<IActionResult> DeleteAccountType([FromQuery] int id)
+        {
+            var result = await _accountTypeService.DeleteAsync(id);
+            return Ok(result);
+        }
+
+        #endregion
     }
 }

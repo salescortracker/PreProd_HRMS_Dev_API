@@ -25,7 +25,31 @@ namespace BusinessLayer.Implementations
         public async Task<ApiResponse<IEnumerable<AccountTypeDto>>> GetAll(int userId)
         {
             var list = (await _unitOfWork.Repository<AccountType>()
-                .FindAsync(x => !x.IsDeleted && x.CreatedBy == userId))
+                .FindAsync(x => !x.IsDeleted))
+                .OrderByDescending(x => x.AccountTypeId)
+                .ToList();
+
+            var dto = list.Select(x => new AccountTypeDto
+            {
+                AccountTypeId = x.AccountTypeId,
+                CompanyId = x.CompanyId,
+                RegionId = x.RegionId,
+                AccountType1 = x.AccountType1,
+                Description = x.Description,
+                IsActive = x.IsActive
+            });
+
+            return new ApiResponse<IEnumerable<AccountTypeDto>>(dto, "Account Types retrieved successfully.");
+        }
+
+        public async Task<ApiResponse<IEnumerable<AccountTypeDto>>> GetByCompanyRegion(int companyId, int regionId)
+        {
+            var list = (await _unitOfWork.Repository<AccountType>()
+                .FindAsync(x =>
+                    !x.IsDeleted &&
+                    x.CompanyId == companyId &&
+                    x.RegionId == regionId &&
+                    x.IsActive))
                 .OrderByDescending(x => x.AccountTypeId)
                 .ToList();
 
