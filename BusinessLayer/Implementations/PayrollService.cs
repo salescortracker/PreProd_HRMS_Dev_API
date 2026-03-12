@@ -2,15 +2,10 @@
 using BusinessLayer.Interfaces;
 using DataAccessLayer.DBContext;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BusinessLayer.Implementations
 {
-    public class PayrollService: IPayrollService
+    public class PayrollService : IPayrollService
     {
         private readonly HRMSContext _context;
 
@@ -20,13 +15,87 @@ namespace BusinessLayer.Implementations
         }
 
         /* ============================================================
-            COMMON CALCULATION METHOD (USED BY PREVIEW & PROCESS)
-         ============================================================ */
+           ATTENDANCE SUMMARY
+        ============================================================ */
 
-        private (decimal gross, decimal totalDeduction, List<PayrollDetail> details)
-            CalculatePayroll(EmployeeSalary empSalary,
-                             List<SalaryStructureComponent> structureComponents,
-                             int userId)
+        private async Task<(int workingDays, int presentDays, int leaveDays, int halfDays)>
+        GetEmployeeAttendanceSummary(int employeeId, int month, int year)
+        {
+            var employee = await _context.Users
+                .Where(x => x.UserId == employeeId)
+                .Select(x => new
+                {
+                    x.EmployeeCode,
+                    x.CompanyId,
+                    x.RegionId
+                })
+                .FirstOrDefaultAsync();
+
+            if (employee == null)
+                return (0, 0, 0, 0);
+
+            DateOnly startDate = new DateOnly(year, month, 1);
+            DateOnly endDate = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+
+            var attendance = await _context.EmployeeAttendances
+                .Where(a =>
+                    a.EmployeeCode == employee.EmployeeCode &&
+                    a.CompanyId == employee.CompanyId &&
+                    a.RegionId == employee.RegionId &&
+                    a.AttendanceDate >= startDate &&
+                    a.AttendanceDate <= endDate)
+                .ToListAsync();
+
+            int present = attendance.Count(a => a.Status == "Present");
+
+            int leave = attendance.Count(a =>
+                a.Status == "SickLeave" ||
+                a.Status == "CasualLeave" ||
+                a.Status == "PaidLeave");
+
+            int half = attendance.Count(a => a.Status == "HalfDay");
+
+            int totalDays = DateTime.DaysInMonth(year, month);
+
+            int weekendDays = Enumerable.Range(1, totalDays)
+                .Select(d => new DateTime(year, month, d))
+                .Count(d => d.DayOfWeek == DayOfWeek.Saturday ||
+                            d.DayOfWeek == DayOfWeek.Sunday);
+
+            int workingDays = totalDays - weekendDays;
+
+            return (workingDays, present, leave, half);
+        }
+
+        /* ============================================================
+           EXPENSE CALCULATION
+        ============================================================ */
+
+        private async Task<decimal> GetApprovedExpenses(int employeeId, int month, int year)
+        {
+            var expenses = await _context.Expenses
+                .Where(e =>
+                    e.UserId == employeeId &&
+                    e.Status == "Approved" &&
+                    e.ExpenseDate.HasValue &&
+                    e.ExpenseDate.Value.Month == month &&
+                    e.ExpenseDate.Value.Year == year)
+                .SumAsync(e => (decimal?)e.Amount);
+
+            return expenses ?? 0;
+        }
+
+        /* ============================================================
+           COMMON PAYROLL CALCULATION
+        ============================================================ */
+
+        private async Task<(decimal gross, decimal totalDeduction, decimal attendanceDeduction, decimal expenses, List<PayrollDetail> details)>
+        CalculatePayroll(
+            EmployeeSalary empSalary,
+            List<SalaryStructureComponent> structureComponents,
+            int userId,
+            int month,
+            int year)
         {
             decimal basic = 0;
             decimal gross = 0;
@@ -34,79 +103,43 @@ namespace BusinessLayer.Implementations
 
             var payrollDetails = new List<PayrollDetail>();
 
-            Console.WriteLine("========== PAYROLL DEBUG START ==========");
-            Console.WriteLine($"EmployeeId: {empSalary.EmployeeId}");
-            Console.WriteLine($"CTC: {empSalary.Ctc}");
-
             /* ================= BASIC ================= */
 
             var basicComponent = structureComponents
-                .FirstOrDefault(x =>
-                    !string.IsNullOrWhiteSpace(x.Component.ComponentName) &&
-                    x.Component.ComponentName.Trim().ToLower() == "basic");
+                .FirstOrDefault(x => x.Component.ComponentName.ToLower() == "basic");
 
             if (basicComponent != null)
             {
-                Console.WriteLine("Basic Component Found");
-
-                var calcType = basicComponent.CalculationType?.Trim().ToLower();
-
-                if (calcType == "fixed")
-                {
+                if (basicComponent.CalculationType?.ToLower() == "fixed")
                     basic = basicComponent.Value;
-                }
-                else if (calcType == "percentage")
-                {
+                else if (basicComponent.CalculationType?.ToLower() == "percentage")
                     basic = empSalary.Ctc * basicComponent.Value / 100;
-                }
 
                 basic = Math.Round(basic, 2);
                 gross += basic;
 
-                Console.WriteLine($"Basic Calculated: {basic}");
-
                 payrollDetails.Add(CreatePayrollDetail(basicComponent.ComponentId, basic, userId));
             }
-            else
-            {
-                Console.WriteLine("❌ Basic Component NOT FOUND");
-            }
 
-            /* ================= OTHER EARNINGS ================= */
+            /* ================= EARNINGS ================= */
 
             var earnings = structureComponents
-                .Where(x =>
-                    x.Component.Type == "Earning" &&
-                    (x.Component.ComponentName == null ||
-                     x.Component.ComponentName.Trim().ToLower() != "basic"));
+                .Where(x => x.Component.Type == "Earning" &&
+                            x.Component.ComponentName.ToLower() != "basic");
 
             foreach (var item in earnings)
             {
                 decimal amount = 0;
-                var calcType = item.CalculationType?.Trim().ToLower();
 
-                Console.WriteLine($"Processing Earning: {item.Component.ComponentName}");
-                Console.WriteLine($"CalculationType: {item.CalculationType}");
-                Console.WriteLine($"Value: {item.Value}");
-                Console.WriteLine($"PercentageOf: {item.Component.PercentageOf}");
-
-                if (calcType == "fixed")
-                {
+                if (item.CalculationType?.ToLower() == "fixed")
                     amount = item.Value;
-                }
-                else if (calcType == "percentage")
+
+                else if (item.CalculationType?.ToLower() == "percentage")
                 {
-                    if (!string.IsNullOrWhiteSpace(item.Component.PercentageOf) &&
-                        item.Component.PercentageOf.Trim().ToLower() == "basic")
-                    {
+                    if (item.Component.PercentageOf?.ToLower() == "basic")
                         amount = basic * item.Value / 100;
-                        Console.WriteLine($"Calculated From BASIC: {amount}");
-                    }
                     else
-                    {
                         amount = empSalary.Ctc * item.Value / 100;
-                        Console.WriteLine($"Calculated From CTC: {amount}");
-                    }
                 }
 
                 amount = Math.Round(amount, 2);
@@ -123,51 +156,81 @@ namespace BusinessLayer.Implementations
             foreach (var item in deductions)
             {
                 decimal amount = 0;
-                var calcType = item.CalculationType?.Trim().ToLower();
 
-                Console.WriteLine("-------- DEDUCTION DEBUG --------");
-                Console.WriteLine($"Component: {item.Component.ComponentName}");
-                Console.WriteLine($"CalculationType: {item.CalculationType}");
-                Console.WriteLine($"Value: {item.Value}");
-                Console.WriteLine($"PercentageOf: {item.Component.PercentageOf}");
-                Console.WriteLine($"Basic Used: {basic}");
-
-                if (calcType == "fixed")
-                {
+                if (item.CalculationType?.ToLower() == "fixed")
                     amount = item.Value;
-                }
-                else if (calcType == "percentage")
+
+                else if (item.CalculationType?.ToLower() == "percentage")
                 {
-                    if (!string.IsNullOrWhiteSpace(item.Component.PercentageOf) &&
-                        item.Component.PercentageOf.Trim().ToLower() == "basic")
-                    {
+                    if (item.Component.PercentageOf?.ToLower() == "basic")
                         amount = basic * item.Value / 100;
-                        Console.WriteLine($"PF Calculated From BASIC: {amount}");
-                    }
                     else
-                    {
                         amount = empSalary.Ctc * item.Value / 100;
-                        Console.WriteLine($"Deduction Calculated From CTC: {amount}");
-                    }
                 }
 
                 amount = Math.Round(amount, 2);
                 totalDeduction += amount;
 
                 payrollDetails.Add(CreatePayrollDetail(item.ComponentId, amount, userId));
-
-                Console.WriteLine($"Final Deduction Amount: {amount}");
-                Console.WriteLine("----------------------------------");
             }
 
-            Console.WriteLine($"Gross Salary: {gross}");
-            Console.WriteLine($"Total Deduction: {totalDeduction}");
-            Console.WriteLine($"Net Salary: {gross - totalDeduction}");
-            Console.WriteLine("========== PAYROLL DEBUG END ==========\n");
+            /* ================= ATTENDANCE ================= */
+
+            var attendance = await GetEmployeeAttendanceSummary(
+                empSalary.EmployeeId, month, year);
+
+            int allowedLeaves = 1;
+            int allowedHalfDays = 2;
+
+            int extraLeaves = Math.Max(0, attendance.leaveDays - allowedLeaves);
+            int extraHalfDays = Math.Max(0, attendance.halfDays - allowedHalfDays);
+
+            decimal perDaySalary = attendance.workingDays == 0
+                ? 0
+                : gross / attendance.workingDays;
+
+            decimal attendanceDeduction =
+                (extraLeaves * perDaySalary) +
+                (extraHalfDays * (perDaySalary / 2));
+
+            attendanceDeduction = Math.Round(attendanceDeduction, 2);
+
+            if (attendanceDeduction > 0)
+            {
+                totalDeduction += attendanceDeduction;
+
+                payrollDetails.Add(new PayrollDetail
+                {
+                    ComponentId = 0,
+                    Amount = attendanceDeduction,
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            /* ================= EXPENSES ================= */
+
+            var expenses = await GetApprovedExpenses(
+                empSalary.EmployeeId, month, year);
+
+            if (expenses > 0)
+            {
+                gross += expenses;
+
+                payrollDetails.Add(new PayrollDetail
+                {
+                    ComponentId = 0,
+                    Amount = expenses,
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
 
             return (
                 Math.Round(gross, 2),
                 Math.Round(totalDeduction, 2),
+                attendanceDeduction,
+                expenses,
                 payrollDetails
             );
         }
@@ -191,8 +254,21 @@ namespace BusinessLayer.Implementations
                     .Where(x => x.StructureId == empSalary.StructureId)
                     .ToListAsync();
 
-                var (gross, totalDeduction, payrollDetails) =
-                    CalculatePayroll(empSalary, structureComponents, userId);
+                var (gross, totalDeduction, attendanceDeduction, expenses, details) =
+                    await CalculatePayroll(empSalary, structureComponents, userId, dto.Month, dto.Year);
+
+                var attendance = await GetEmployeeAttendanceSummary(
+                    empSalary.EmployeeId, dto.Month, dto.Year);
+
+                var detailList = details.Select(d => new PayrollDetailDto
+                {
+                    ComponentId = d.ComponentId,
+                    Amount = d.Amount,
+                    Type = structureComponents
+                        .FirstOrDefault(x => x.ComponentId == d.ComponentId)?.Component.Type ?? "",
+                    ComponentName = structureComponents
+                        .FirstOrDefault(x => x.ComponentId == d.ComponentId)?.Component.ComponentName ?? "Other"
+                }).ToList();
 
                 resultList.Add(new PayrollTransactionDto
                 {
@@ -202,18 +278,14 @@ namespace BusinessLayer.Implementations
                     GrossSalary = gross,
                     TotalDeductions = totalDeduction,
                     NetSalary = gross - totalDeduction,
+                    AttendanceDeduction = attendanceDeduction,
+                    Expenses = expenses,
                     Status = "Preview",
-                    Details = payrollDetails.Select(d => new PayrollDetailDto
-                    {
-                        ComponentId = d.ComponentId,
-                        Amount = d.Amount,
-                        Type = structureComponents
-                            .First(x => x.ComponentId == d.ComponentId)
-                            .Component.Type,
-                        ComponentName = structureComponents
-                            .First(x => x.ComponentId == d.ComponentId)
-                            .Component.ComponentName
-                    }).ToList()
+                    WorkingDays = attendance.workingDays,
+                    PresentDays = attendance.presentDays,
+                    LeaveDays = attendance.leaveDays,
+                    HalfDays = attendance.halfDays,
+                    Details = detailList
                 });
             }
 
@@ -251,8 +323,8 @@ namespace BusinessLayer.Implementations
                         .Where(x => x.StructureId == empSalary.StructureId)
                         .ToListAsync();
 
-                    var (gross, totalDeduction, payrollDetails) =
-                        CalculatePayroll(empSalary, structureComponents, userId);
+                    var (gross, totalDeduction, attendanceDeduction, expenses, payrollDetails) =
+                        await CalculatePayroll(empSalary, structureComponents, userId, dto.Month, dto.Year);
 
                     var payrollTransaction = new PayrollTransaction
                     {
@@ -262,7 +334,7 @@ namespace BusinessLayer.Implementations
                         GrossSalary = gross,
                         TotalDeductions = totalDeduction,
                         NetSalary = gross - totalDeduction,
-                        Status = "Draft",
+                        Status = "Processed",
                         UserId = userId,
                         CompanyId = empSalary.CompanyId,
                         RegionId = empSalary.RegionId,
@@ -284,24 +356,16 @@ namespace BusinessLayer.Implementations
                 await transaction.CommitAsync();
                 return "Payroll Processed Successfully";
             }
-            catch (Exception ex)
+            catch
             {
                 await transaction.RollbackAsync();
-                Console.WriteLine("ERROR: " + ex.Message);
                 throw;
             }
         }
 
-        private PayrollDetail CreatePayrollDetail(int componentId, decimal amount, int userId)
-        {
-            return new PayrollDetail
-            {
-                ComponentId = componentId,
-                Amount = Math.Round(amount, 2),
-                UserId = userId,
-                CreatedAt = DateTime.UtcNow
-            };
-        }
+        /* ============================================================
+           GET PAYROLL BY MONTH
+        ============================================================ */
 
         public async Task<List<PayrollTransactionDto>> GetPayrollByMonthAsync(int month, int year, int userId)
         {
@@ -316,24 +380,24 @@ namespace BusinessLayer.Implementations
                     GrossSalary = x.GrossSalary,
                     TotalDeductions = x.TotalDeductions,
                     NetSalary = x.NetSalary,
-                    Status = x.Status,
-
-                    Details = _context.PayrollDetails
-                        .Where(d => d.PayrollId == x.PayrollId)
-                        .Join(_context.SalaryComponents,
-                              d => d.ComponentId,
-                              c => c.ComponentId,
-                              (d, c) => new PayrollDetailDto
-                              {
-                                  ComponentId = d.ComponentId,
-                                  ComponentName = c.ComponentName,
-                                  Amount = d.Amount,
-                                  Type = c.Type
-                              })
-                        .ToList()
+                    Status = x.Status
                 })
                 .ToListAsync();
         }
-    
-}
+
+        /* ============================================================
+           HELPER
+        ============================================================ */
+
+        private PayrollDetail CreatePayrollDetail(int componentId, decimal amount, int userId)
+        {
+            return new PayrollDetail
+            {
+                ComponentId = componentId,
+                Amount = Math.Round(amount, 2),
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+    }
 }
