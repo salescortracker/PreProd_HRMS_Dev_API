@@ -11,7 +11,7 @@ namespace BusinessLayer.Interfaces
     public interface IHolidayListService
     {
         Task<ApiResponse<IEnumerable<HolidayListDto>>> GetAll(int userId);
-
+        Task<ApiResponse<IEnumerable<HolidayListDto>>> GetAllInCalender(int companyId, int regionId);
         Task<ApiResponse<HolidayListDto?>> GetByIdAsync(int id);
 
         Task<ApiResponse<string>> CreateAsync(CreateUpdateHolidayListDto dto);

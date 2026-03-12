@@ -1183,6 +1183,13 @@ namespace HRMS_Backend.Controllers
             return Ok(result);
         }
 
+        [HttpGet("weekoffCalender")]
+        public async Task<IActionResult> GetWeekoffs([FromQuery] int companyId, int regionId)
+        {
+            var result = await _weekoffService.GetAllWeekOffs(companyId, regionId);
+            return Ok(result);
+        }
+
         [HttpGet("weekoff-list/{id:int}")]
         public async Task<IActionResult> GetWeekoffById(int id)
         {
@@ -1220,6 +1227,15 @@ namespace HRMS_Backend.Controllers
             var result = await _holidayListService.GetAll(userId);
             return Ok(result);
         }
+
+
+        [HttpGet("holiday-listCalender")]
+        public async Task<IActionResult> GetHolidayListCalender([FromQuery] int companyId, int regionId)
+        {
+            var result = await _holidayListService.GetAllInCalender(companyId, regionId);
+            return Ok(result);
+        }
+
 
         [HttpGet("holiday-list/{id:int}")]
         public async Task<IActionResult> GetHolidayById(int id)

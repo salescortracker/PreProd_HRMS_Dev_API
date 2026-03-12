@@ -11,6 +11,7 @@ namespace BusinessLayer.Interfaces
     public interface IWeekoffService
     {
         Task<ApiResponse<IEnumerable<WeekoffDto>>> GetAll(int userId);
+        Task<ApiResponse<IEnumerable<WeekoffDto>>> GetAllWeekOffs(int companyId, int regionId);
         Task<ApiResponse<WeekoffDto?>> GetByIdAsync(int id);
         Task<ApiResponse<string>> CreateAsync(WeekoffDto dto);
         Task<ApiResponse<string>> UpdateAsync(WeekoffDto dto);
