@@ -16,10 +16,11 @@ namespace BusinessLayer.Implementations
         }
 
         public async Task<ApiResponse<IEnumerable<ExpenseCategoryDto>>> GetAllAsync(
-            int companyId, int regionId)
+            int userId)
         {
+
             var list = await _context.ExpenseCategories
-              //  .Where(x => x.CompanyId == companyId && x.RegionId == regionId)
+                .Where(x => x.UserId == userId)
                 .OrderBy(x => x.SortOrder)
                 .Select(x => new ExpenseCategoryDto
                 {
@@ -46,7 +47,8 @@ namespace BusinessLayer.Implementations
                 IsActive = dto.IsActive,
                 CompanyId = dto.CompanyId,
                 RegionId = dto.RegionId,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow,
+                UserId = dto.userId
             };
 
             _context.ExpenseCategories.Add(entity);
