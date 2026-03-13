@@ -1381,6 +1381,13 @@ namespace HRMS_Backend.Controllers
             return Ok(result);
         }
 
+        [HttpGet("GetPolicyCategoriesByCompanyRegion")]
+        public async Task<IActionResult> GetPolicyCategoriesByCompanyRegion(int companyId, int regionId)
+        {
+            var result = await _policyCategoryService.GetByCompanyRegion(companyId, regionId);
+            return Ok(result);
+        }
+
         #endregion
         //-------------------------------RESIGNATIONMASTER-------------------------------//
 
