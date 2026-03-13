@@ -24,13 +24,13 @@ namespace BusinessLayer.Implementations
 
         #region Get All
         public async Task<ApiResponse<IEnumerable<LeaveStatusDto>>>
-      GetAllLeaveStatusAsync(int companyId, int regionId)
+   GetAllLeaveStatusAsync(int userId)
         {
             try
             {
-                if (companyId <= 0)
+                if (userId <= 0)
                     return new ApiResponse<IEnumerable<LeaveStatusDto>>(
-                        null, "Invalid company id", false);
+                        null, "Invalid user id", false);
 
                 var data = await _unitOfWork
                     .Repository<LeaveStatus>()
@@ -38,8 +38,7 @@ namespace BusinessLayer.Implementations
 
                 var result = data
                     .Where(x =>
-                        x.CompanyId == companyId &&
-                        x.RegionId == regionId &&
+                        x.CreatedBy == userId &&
                         !x.IsDeleted)
                     .Select(MapToDto)
                     .ToList();
@@ -57,7 +56,6 @@ namespace BusinessLayer.Implementations
                     false);
             }
         }
-
         #endregion
 
 

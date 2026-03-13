@@ -1255,12 +1255,26 @@ namespace HRMS_Backend.Controllers
         #region LeaveStatus
 
         #region Get All
-        [HttpGet("GetAllLeaveStatus")]
-        public async Task<IActionResult> GetAllLeaveStatus(int companyId, int regionId)
-        {
+        //[HttpGet("GetAllLeaveStatus")]
+        //public async Task<IActionResult> GetAllLeaveStatus(int companyId, int regionId)
+        //{
 
+        //    var result = await _leaveStatusService
+        //        .GetAllLeaveStatusAsync(companyId, regionId);
+
+        //    if (result == null)
+        //        return StatusCode(500, "Service returned null response");
+
+        //    if (!result.Success)
+        //        return BadRequest(result);
+
+        //    return Ok(result);
+        //}
+        [HttpGet("GetAllLeaveStatus")]
+        public async Task<IActionResult> GetAllLeaveStatus(int userId)
+        {
             var result = await _leaveStatusService
-                .GetAllLeaveStatusAsync(companyId, regionId);
+                .GetAllLeaveStatusAsync(userId);
 
             if (result == null)
                 return StatusCode(500, "Service returned null response");
