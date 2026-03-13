@@ -24,23 +24,49 @@ namespace BusinessLayer.Implementations
         }
 
         #region Get All
-        public async Task<ApiResponse<IEnumerable<AttendanceStatusDto>>>
-            GetAllAsync(int companyId, int regionId)
+        //public async Task<ApiResponse<IEnumerable<AttendanceStatusDto>>>
+        //    GetAllAsync(int companyId, int regionId)
+        //{
+        //    try
+        //    {
+        //        if (companyId <= 0 || regionId <= 0)
+        //            return new ApiResponse<IEnumerable<AttendanceStatusDto>>(
+        //                null, "Invalid company or region id", false);
+
+        //        var data = await _unitOfWork
+        //            .Repository<AttendanceStatus>()
+        //            .GetAllAsync();
+
+        //        var result = data
+        //            .Where(x => x.CompanyId == companyId &&
+        //                        x.RegionId == regionId &&
+        //                        !x.IsDeleted)
+        //            .Select(MapToDto)
+        //            .ToList();
+
+        //        return new ApiResponse<IEnumerable<AttendanceStatusDto>>(
+        //            result, "Attendance statuses fetched successfully", true);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return new ApiResponse<IEnumerable<AttendanceStatusDto>>(
+        //            null, ex.Message, false);
+        //    }
+        //}
+        public async Task<ApiResponse<IEnumerable<AttendanceStatusDto>>> GetAllAsync(int userId)
         {
             try
             {
-                if (companyId <= 0 || regionId <= 0)
+                if (userId <= 0)
                     return new ApiResponse<IEnumerable<AttendanceStatusDto>>(
-                        null, "Invalid company or region id", false);
+                        null, "Invalid user id", false);
 
                 var data = await _unitOfWork
                     .Repository<AttendanceStatus>()
                     .GetAllAsync();
 
                 var result = data
-                    .Where(x => x.CompanyId == companyId &&
-                                x.RegionId == regionId &&
-                                !x.IsDeleted)
+                    .Where(x => x.CreatedBy == userId && !x.IsDeleted)
                     .Select(MapToDto)
                     .ToList();
 

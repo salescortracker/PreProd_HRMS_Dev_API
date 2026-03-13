@@ -26,4 +26,5 @@ public partial class Category
     public int? ModifiedBy { get; set; }
 
     public DateTime? ModifiedAt { get; set; }
+    public int UserId { get; set; }
 }

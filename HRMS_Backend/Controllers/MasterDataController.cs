@@ -1,4 +1,5 @@
-﻿using BusinessLayer.DTOs;
+﻿using BusinessLayer.Common;
+using BusinessLayer.DTOs;
 using BusinessLayer.Implementations;
 using BusinessLayer.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -1119,10 +1120,24 @@ namespace HRMS_Backend.Controllers
 
         #region AttendanceStatus
 
+        //[HttpGet("GetAllAttendanceStatus")]
+        //public async Task<IActionResult> GetAll(int userId)
+        //{
+        //    var result = await _attendanceStatusService.GetAllAsync(userId);
+
+        //    if (!result.Success)
+        //        return BadRequest(result);
+
+        //    return Ok(result);
+        //}
         [HttpGet("GetAllAttendanceStatus")]
-        public async Task<IActionResult> GetAll(int companyId, int regionId)
+        public async Task<IActionResult> GetAllAttendancesStatus(int userId)
         {
-            var result = await _attendanceStatusService.GetAllAsync(companyId, regionId);
+            if (userId <= 0)
+                return BadRequest(new ApiResponse<IEnumerable<AttendanceStatusDto>>(
+                    null, "Invalid user id", false));
+
+            var result = await _attendanceStatusService.GetAllAsync(userId);
 
             if (!result.Success)
                 return BadRequest(result);
