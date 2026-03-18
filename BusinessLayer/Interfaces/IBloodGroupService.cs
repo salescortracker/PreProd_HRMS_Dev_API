@@ -18,8 +18,7 @@ namespace BusinessLayer.Interfaces
         Task<ApiResponse<BloodGroupDto>>
             UpdateAsync(BloodGroupDto dto);
 
-        Task<ApiResponse<bool>>
-            DeleteAsync(int id);
+        Task<ApiResponse<bool>> DeleteBloodGroupAsync(int id);
 
         Task<ApiResponse<IEnumerable<BloodGroupDto>>>
             GetAllCmpRegAsync(int companyId, int regionId);
