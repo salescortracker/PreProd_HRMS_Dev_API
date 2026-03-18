@@ -78,13 +78,12 @@ namespace BusinessLayer.Implementations
         public async Task<bool> DeleteAsync(int id)
         {
             var entity = await _context.MaritalStatuses
-                .FirstOrDefaultAsync(x => x.MaritalStatusId == id && !x.IsDeleted);
+                .FirstOrDefaultAsync(x => x.MaritalStatusId == id);
 
             if (entity == null) return false;
 
-            entity.IsDeleted = true;
-            
-            entity.ModifiedAt = DateTime.Now;
+            // ✅ Permanent delete
+            _context.MaritalStatuses.Remove(entity);
 
             await _context.SaveChangesAsync();
             return true;

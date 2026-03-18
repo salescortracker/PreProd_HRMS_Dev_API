@@ -19,7 +19,10 @@ namespace HRMS_Backend.Controllers
         private readonly IEmployeeMasterService _employeeService;
         private readonly ICertificationTypeService _certificationTypeService;
         private readonly ILeaveTypeService _leaveTypeService;
-        private readonly IExpenseCategoryService _expensecategoryservice; private readonly IAssetStatusService _assetStatusService;
+        private readonly IExpenseCategoryService _expensecategoryservice;
+        //private readonly IExpenseStatusService _expenseStatusService;
+        private readonly IExpenseService expenseService;
+        private readonly IAssetStatusService _assetStatusService;
         private readonly IHelpdeskCategoryAdminService _helpdeskCategoryAdminService;
         private readonly IProjectStatusAdminService _projectStatusAdminService;
         private readonly IPriorityService _priorityService;
@@ -218,6 +221,7 @@ namespace HRMS_Backend.Controllers
                 return StatusCode(500, new { success = false, message = "An unexpected error occurred while fetching department list." });
             }
         }
+
 
         // ✅ GET BY ID
         [HttpGet("GetDepartmentsById/{id:int}")]
@@ -690,8 +694,16 @@ namespace HRMS_Backend.Controllers
 
         #region Delete
         [HttpDelete("DeleteBloodGroups/{id}")]
-        public async Task<IActionResult> Delete(int id)
-        => Ok(await _bloodGroupService.DeleteAsync(id));
+        public async Task<IActionResult> DeleteBloodGroups(int id)
+        {
+            var result = await _bloodGroupService.DeleteBloodGroupAsync(id);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
         #endregion
 
 
@@ -1683,12 +1695,12 @@ int regionId)
 
         #endregion
 
-        [HttpGet("companynewscategory-list/{userId}")]
-        public async Task<IActionResult> GetCompanyNewsCategoryList(int userId)
-        {
-            var data = await _companyNewsCategoryService.GetAllCompanyNewsCategoryAsync(userId);
-            return Ok(data);
-        }
+        //[HttpGet("companynewscategory-list/{userId}")]
+        //public async Task<IActionResult> GetCompanyNewsCategoryList(int userId)
+        //{
+        //    var data = await _companyNewsCategoryService.GetAllCompanyNewsCategoryAsync(userId);
+        //    return Ok(data);
+        //}
 
         [HttpPost("CreateCompanyNewsCategory")]
         public async Task<IActionResult> CreateCompanyNewsCategory([FromBody] CategoryDto dto)

@@ -1,6 +1,7 @@
 ﻿using BusinessLayer.DTOs;
 using BusinessLayer.Interfaces;
 using DataAccessLayer.DBContext;
+using DataAccessLayer.Models;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -866,15 +867,18 @@ namespace HRMS_Backend.Controllers
             [FromForm] int regionId,
             [FromForm] string maritalStatusName,
             [FromForm] string? description,
-            [FromForm] bool isActive)
+            [FromForm] bool isActive,
+            [FromForm] int userId)
         {
             var dto = new MaritalStatusDto
             {
                 CompanyId = companyId,
                 RegionId = regionId,
+                MaritalStatusId = id,
                 MaritalStatusName = maritalStatusName,
                 Description = description,
-                IsActive = isActive
+                IsActive = isActive,
+                UserId = userId
             };
 
             var result = await _maritalStatusService.UpdateAsync(dto);
@@ -884,13 +888,14 @@ namespace HRMS_Backend.Controllers
         }
 
         // POST: api/MaritalStatus/delete
-        [HttpPost("delete")]
-        public async Task<IActionResult> DeleteMaritalStatus([FromForm] int id)
+        [HttpDelete("deletema/{id}")]
+        public async Task<IActionResult> DeleteMaritalStatus(int id)
         {
             var result = await _maritalStatusService.DeleteAsync(id);
+
             return result
-                ? Ok(new { message = "Marital Status deleted successfully" })
-                : NotFound();
+                ? Ok(new { message = "Marital Status deleted permanently" })
+                : NotFound(new { message = "Record not found" });
         }
 
         #endregion
