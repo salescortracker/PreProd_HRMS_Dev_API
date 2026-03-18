@@ -97,7 +97,24 @@ namespace BusinessLayer.Implementations
                     throw new ArgumentException("Username or password cannot be empty.");
 
                 var result = _context.Users.Where(x => x.Email == username && x.PasswordHash == password).FirstOrDefault();
-                
+
+                //if (result == null)
+                //{
+                //    return null;
+                //}
+
+                //if (result.RoleId == 0)
+                //{
+                //    return new
+                //    {
+                //        userId = result.UserId,
+                //        fullName = result.FullName,
+                //        email = result.Email,
+                //        roleId = result.RoleId,
+                //        roleName = "SuperAdmin"
+                //    };
+                //}
+
                 if (result.RoleId == 0)
                 {
                    var roledata   = await (
@@ -208,8 +225,26 @@ namespace BusinessLayer.Implementations
                     loginStatus.Userloginstatus = true;
                     _context.Users.Update(loginStatus);
                     await _context.SaveChangesAsync();
-
-                    return userData;
+                    var modules = await (
+    from cm in _context.CompanyModules
+    join m in _context.Modules on cm.AppModuleId equals m.ModuleId
+    where cm.CompanyId == result.CompanyId && cm.IsEnabled == true
+    orderby m.DisplayOrder
+    select new
+    {
+        m.ModuleId,
+        m.ModuleName,
+        m.Route,
+        m.Icon,
+        m.ParentModuleId
+    }
+).ToListAsync();
+                    //return userData;
+                    return new
+                    {
+                        user = userData,
+                        modules = modules
+                    };
 
                 }
 
