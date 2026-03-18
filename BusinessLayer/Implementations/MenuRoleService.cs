@@ -254,7 +254,7 @@ namespace BusinessLayer.Implementations
             }
         }
         // ✅ Mapper
-        private static MenuRoleDto MapToDto(MenuRoleMaster e)
+        public static MenuRoleDto MapToDto(MenuRoleMaster e)
         {
             return new MenuRoleDto
             {
@@ -267,6 +267,27 @@ namespace BusinessLayer.Implementations
                 CanDelete = e.CanDelete,
                 CanApprove = e.CanApprove,
                 IsActive = e.IsActive
+            };
+        }
+
+        public async Task<bool> HasPermissionAsync(int roleId, int menuId, string action)
+        {
+            var permission = (await _unitOfWork.Repository<MenuRoleMaster>()
+                .FindAsync(x => x.RoleId == roleId && x.MenuId == menuId))
+                .FirstOrDefault();
+
+            if (permission == null)
+                return false;
+
+            return action.ToLower() switch
+            {
+                "view" => permission.CanView ?? false,
+                "create" => permission.CanAdd ?? false,
+                "add" => permission.CanAdd ?? false,
+                "edit" => permission.CanEdit ?? false,
+                "delete" => permission.CanDelete ?? false,
+                "approve" => permission.CanApprove ?? false,
+                _ => false
             };
         }
     }

@@ -4,6 +4,7 @@ using BusinessLayer.Interfaces;
 using DataAccessLayer.DBContext;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace HRMS_Backend.Controllers
 {
@@ -20,7 +21,10 @@ namespace HRMS_Backend.Controllers
         private readonly IManagerKpiReviewService _managerReviewService;
         private readonly IEmailService _emailService;
         private readonly HRMSContext _context;
-        public EmployeeController(IEmployeeResignationService resignationService,IShiftAllocationService shiftAllocationService,  IemployeeService employeeService, ILeaveService leaveService, IWebHostEnvironment env, IEmployeeKpiService kpiService, IManagerKpiReviewService managerReviewService, IEmailService emailService, HRMSContext context)
+        private readonly IMenuRoleService _menuRoleService;
+        public EmployeeController(IEmployeeResignationService resignationService,IShiftAllocationService shiftAllocationService,  IemployeeService employeeService, 
+            ILeaveService leaveService, IWebHostEnvironment env, IEmployeeKpiService kpiService, IManagerKpiReviewService managerReviewService, IEmailService emailService,
+            HRMSContext context, IMenuRoleService menuRoleService)
         {
             _resignationService = resignationService;
             _employeeService = employeeService;
@@ -31,6 +35,8 @@ namespace HRMS_Backend.Controllers
             _kpiService = kpiService;
             _context = context;
             _managerReviewService = managerReviewService;
+            _menuRoleService = menuRoleService;
+            
         }
 
         #region Employee Resignation Details
@@ -1463,12 +1469,47 @@ public class UpdateResignationStatusRequest
         #endregion
         #region Personal details
         // GET: api/PersonalDetails
-        [HttpGet("GetempPersonalAll")]
-        public async Task<IActionResult> GetempPersonalAll()
+        //[HttpGet("GetempPersonalAll")]
+        //public async Task<IActionResult> GetempPersonalAll()
+        //{
+        //    var result = await _employeeService.GetAllPersonalEmailAsync();
+        //    return Ok(result);
+        //}
+        //private int GetRoleIdFromToken()
+        //{
+        //    var roleClaim = User.Claims.FirstOrDefault(c => c.Type == "RoleId");
+
+        //    if (roleClaim == null)
+        //        throw new Exception("RoleId not found in token");
+
+        //    return int.Parse(roleClaim.Value);
+        //}
+        private int GetRoleId(int userId)
         {
-            var result = await _employeeService.GetAllPersonalEmailAsync();
-            return Ok(result);
+            var roleId = _context.Users
+                .Where(u => u.UserId == userId)
+                .Select(u => u.RoleId)
+                .FirstOrDefault();
+
+            if (roleId == 0)
+                throw new Exception("Role not found");
+
+            return roleId;
         }
+
+        //[HttpGet("GetempPersonalAll")]
+        //public async Task<IActionResult> GetempPersonalAll()
+        //{
+        //    int roleId = GetRoleId(dto.UserId);
+
+        //    bool canView = await _menuRoleService.HasPermissionAsync(roleId, 3, "view");
+
+        //    if (!canView)
+        //        return Forbid("You don't have permission to view employees");
+
+        //    var result = await _employeeService.GetAllPersonalEmailAsync();
+        //    return Ok(result);
+        //}
 
         // GET: api/PersonalDetails/5
         [HttpGet("GetByIdPersonalEmailAsync/{id}")]
@@ -1502,15 +1543,58 @@ public class UpdateResignationStatusRequest
             return Ok(result);
         }
         // POST: api/PersonalDetails
+        //[HttpPost("AddPersonalEmailAsync")]
+        //public async Task<IActionResult> AddPersonalEmailAsync([FromForm] PersonalDetailsDto dto)
+        //{
+        //    try
+        //    {
+        //        if (!ModelState.IsValid)
+        //            return BadRequest(ModelState);
+        //        string root = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+
+        //        string path = Path.Combine(root, "Uploads", "EmployeeProfileDetails");
+
+        //        if (!Directory.Exists(path))
+        //            Directory.CreateDirectory(path);
+
+        //        if (dto.profilePicture != null && dto.profilePicture.Length > 0)
+        //        {
+        //            string fileName = $"{Guid.NewGuid()}_{dto.profilePicture.FileName}";
+        //            string fullPath = Path.Combine(path, fileName);
+
+        //            using var stream = new FileStream(fullPath, FileMode.Create);
+        //            await dto.profilePicture.CopyToAsync(stream);
+
+        //            dto.profilePicturePath = $"Uploads/EmployeeProfileDetails/{fileName}";
+        //        }
+        //        var result = await _employeeService.AddPersonalEmailAsync(dto);
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //}
+
+
         [HttpPost("AddPersonalEmailAsync")]
         public async Task<IActionResult> AddPersonalEmailAsync([FromForm] PersonalDetailsDto dto)
         {
             try
             {
+                //// 🔹 Get RoleId from JWT Token
+                //int roleId = GetRoleId(dto.userId);
+
+                //bool canAdd = await _menuRoleService.HasPermissionAsync(roleId, menuid, "create");
+
+
+                //if (!canAdd)
+                //    return Forbid("You don't have permission to add employee personal details");
+
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
-                string root = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
 
+                string root = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                 string path = Path.Combine(root, "Uploads", "EmployeeProfileDetails");
 
                 if (!Directory.Exists(path))
@@ -1526,15 +1610,16 @@ public class UpdateResignationStatusRequest
 
                     dto.profilePicturePath = $"Uploads/EmployeeProfileDetails/{fileName}";
                 }
+
                 var result = await _employeeService.AddPersonalEmailAsync(dto);
+
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                throw ex;
+                return StatusCode(500, ex.Message);
             }
         }
-
         // PUT: api/PersonalDetails
         [HttpPost("UpdateempPersonalAsync")]
         public async Task<IActionResult> UpdateempPersonalAsync([FromForm] PersonalDetailsDto dto)
@@ -1583,6 +1668,19 @@ public class UpdateResignationStatusRequest
 
             return Ok(new { message = "Deleted successfully" });
         }
+
+        [HttpGet("GetPermission")]
+        public async Task<IActionResult> GetPermission(int userId, int menuId, string action)
+        {
+            int roleId = GetRoleId(userId);
+            //var menu = await _context.MenuRoleMasters
+            //     .FirstOrDefaultAsync(m => m.MenuId == menuId);
+
+            bool hasPermission = await _menuRoleService.HasPermissionAsync(roleId, menuId, action);
+
+            return Ok(hasPermission);
+        }
+
         #endregion
         #region DigitalCard
         [HttpGet("GetDigitalCard/{userId}")]
@@ -1657,19 +1755,78 @@ public class UpdateResignationStatusRequest
         /// <summary>
         /// Add a new family entry
         /// </summary>
+        /// 
         [HttpPost("addempFamilyAsync")]
         public async Task<IActionResult> addempFamilyAsync([FromForm] EmployeeFamilyDto model)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
 
-            // set created by (audit)
-            model.CreatedBy = model.CreatedBy == 0 && model.UserId.HasValue ? model.UserId.Value : model.CreatedBy;
+                // 🔹 Get UserId from request
+                int userId = model.UserId ?? 0;
 
-            var id = await _employeeService.addempFamilyAsync(model);
+                if (userId == 0)
+                    return BadRequest("UserId is required");
 
-            return Ok(new { message = "Saved successfully", id });
+                // 🔹 Get RoleId from Users table
+                var user = await _context.Users
+                                .Where(u => u.UserId == userId)
+                                .Select(u => new { u.RoleId })
+                                .FirstOrDefaultAsync();
+
+                if (user == null)
+                    return BadRequest("User not found");
+
+                int roleId = user.RoleId;
+                // 🔹 Get MenuId from MenuMaster
+                var menuId = await _context.MenuMasters
+                    .Where(m => m.MenuName.Trim().ToLower() == "Family Details".ToLower() && m.IsActive == true)
+                    .Select(m => m.MenuId)
+                    .FirstOrDefaultAsync();
+
+                if (menuId == 0)
+                    return BadRequest("Menu not found");
+
+                // 🔹 Check permission (MenuId = 7)
+               
+
+                bool canAdd = await _menuRoleService.HasPermissionAsync(roleId, menuId, "create");
+
+                if (!canAdd)
+                {
+                    return StatusCode(403, "You don't have permission to add employee family details");
+                }
+
+                // 🔹 Set CreatedBy (Audit)
+                model.CreatedBy = model.CreatedBy == 0 && model.UserId.HasValue
+                    ? model.UserId.Value
+                    : model.CreatedBy;
+
+                // 🔹 Save data
+                var id = await _employeeService.addempFamilyAsync(model);
+
+                return Ok(new { message = "Saved successfully", id });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
+        //[HttpPost("addempFamilyAsync")]
+        //public async Task<IActionResult> addempFamilyAsync([FromForm] EmployeeFamilyDto model)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
+
+        //    // set created by (audit)
+        //    model.CreatedBy = model.CreatedBy == 0 && model.UserId.HasValue ? model.UserId.Value : model.CreatedBy;
+
+        //    var id = await _employeeService.addempFamilyAsync(model);
+
+        //    return Ok(new { message = "Saved successfully", id });
+        //}
 
         /// <summary>
         /// Update an existing family entry
