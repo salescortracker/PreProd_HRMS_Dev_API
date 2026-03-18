@@ -14,6 +14,6 @@ namespace BusinessLayer.Interfaces
         Task<bool> AssignPermissionsToMultipleRolesAsync(List<RolePermissionRequestDto> rolePermissions);
         Task<IEnumerable<MenuRoleDto>> GetPermissionsForMultipleRolesAsync(List<int> roleIds);
         Task<IEnumerable<MenuRoleMasterDto>> GetAllMenusByRoleId(int roleId);
-
+        Task<bool> HasPermissionAsync(int roleId, int menuId, string action);
     }
 }
