@@ -35,6 +35,17 @@ namespace BusinessLayer.Implementations
 
         public async Task<RelationshipDto> AddrelatiopnshipAsync(RelationshipDto model)
         {
+
+            var exists = await _context.Relationships
+        .AnyAsync(x =>
+            !x.IsDeleted &&
+            x.RelationshipName.ToLower() == model.RelationshipName.ToLower() &&
+            x.CompanyId == model.companyId &&
+            x.RegionId == model.regionId
+        );
+
+            if (exists)
+                throw new Exception("Relationship already exists");
             //entity. = DateTime.UtcNow;
             var entity = new Relationship
             {
@@ -57,6 +68,17 @@ namespace BusinessLayer.Implementations
 
             if (dbObj == null)
                 return null;
+            var exists = await _context.Relationships.AnyAsync(x =>
+           !x.IsDeleted &&
+           x.RelationshipId != entity.RelationshipID && // 👈 important
+           x.RelationshipName.ToLower() == entity.RelationshipName.ToLower() &&
+           x.CompanyId == entity.companyId &&
+           x.RegionId == entity.regionId
+   );
+
+            if (exists)
+                throw new Exception("Relationship already exists");
+
 
             dbObj.RelationshipName = entity.RelationshipName;
          //   dbObj.Description = entity.Description;

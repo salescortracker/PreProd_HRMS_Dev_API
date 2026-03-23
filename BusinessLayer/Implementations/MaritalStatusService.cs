@@ -38,6 +38,17 @@ namespace BusinessLayer.Implementations
 
         public async Task<bool> CreateAsync(MaritalStatusDto dto)
         {
+
+            var exists = await _context.MaritalStatuses.AnyAsync(x =>
+            x.MaritalStatusName.ToLower() == dto.MaritalStatusName.ToLower() &&
+            x.CompanyId == dto.CompanyId &&
+            x.RegionId == dto.RegionId &&
+            !x.IsDeleted
+            );
+
+                if (exists)
+                throw new Exception("Marital status already exists");
+
             var entity = new MaritalStatus
             {
                 CompanyId = dto.CompanyId,
@@ -58,6 +69,17 @@ namespace BusinessLayer.Implementations
 
         public async Task<bool> UpdateAsync(MaritalStatusDto dto)
         {
+            var exists = await _context.MaritalStatuses.AnyAsync(x =>
+            x.MaritalStatusName.ToLower() == dto.MaritalStatusName.ToLower() &&
+            x.CompanyId == dto.CompanyId &&
+            x.RegionId == dto.RegionId &&
+            x.MaritalStatusId != dto.MaritalStatusId &&
+            !x.IsDeleted
+            );
+
+                if (exists)
+                throw new Exception("Duplicate marital status not allowed");
+
             var entity = await _context.MaritalStatuses
                 .FirstOrDefaultAsync(x => x.MaritalStatusId == dto.MaritalStatusId && !x.IsDeleted);
 
@@ -78,13 +100,12 @@ namespace BusinessLayer.Implementations
         public async Task<bool> DeleteAsync(int id)
         {
             var entity = await _context.MaritalStatuses
-                .FirstOrDefaultAsync(x => x.MaritalStatusId == id && !x.IsDeleted);
+                .FirstOrDefaultAsync(x => x.MaritalStatusId == id);
 
             if (entity == null) return false;
 
-            entity.IsDeleted = true;
-            
-            entity.ModifiedAt = DateTime.Now;
+            // ✅ Permanent delete
+            _context.MaritalStatuses.Remove(entity);
 
             await _context.SaveChangesAsync();
             return true;
