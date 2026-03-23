@@ -675,11 +675,15 @@ namespace HRMS_Backend.Controllers
         [HttpPost("AddRelationship")]
         public async Task<IActionResult> AddRelationship([FromBody] RelationshipDto relationship)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var result = await _adminService.AddrelatiopnshipAsync(relationship);
-            return Ok(result);
+            try
+            {
+                var result = await _adminService.AddrelatiopnshipAsync(relationship);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         /// <summary>
@@ -688,15 +692,19 @@ namespace HRMS_Backend.Controllers
         [HttpPost("UpdateRelationship")]
         public async Task<IActionResult> UpdateRelationship([FromBody] RelationshipDto relationship)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            try
+            {
+                var result = await _adminService.UpdaterelatiopnshipAsync(relationship);
 
-            var result = await _adminService.UpdaterelatiopnshipAsync(relationship);
+                if (result == null)
+                    return NotFound("Relationship record not found to update.");
 
-            if (result == null)
-                return NotFound("Relationship record not found to update.");
-
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         /// <summary>
@@ -712,7 +720,7 @@ namespace HRMS_Backend.Controllers
             if (!result)
                 return NotFound("Relationship record not found to delete.");
 
-            return Ok("Deleted Successfully");
+            return Ok(new { message = "Deleted Successfully" });
         }
         #endregion
         #region gender Details
