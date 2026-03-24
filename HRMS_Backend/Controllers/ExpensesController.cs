@@ -13,15 +13,20 @@ namespace HRMS_Backend.Controllers
         private readonly IExpenseService _expenseService;
         private readonly IWebHostEnvironment _env;
         private readonly HRMSContext _context;
+        private readonly IExpenseStatusService _expenseStatusService;
         public ExpensesController(
            IExpenseService expenseService,
-           IWebHostEnvironment env,
-           HRMSContext context)
+           IWebHostEnvironment env, 
+           HRMSContext context,
+           IExpenseStatusService expenseStatusService)
         {
             _expenseService = expenseService;
             _env = env;
             _context = context;
+            _expenseStatusService = expenseStatusService;
         }
+
+        #region
         // -------------------------------------------------------------
         // CREATE EXPENSE
         // -------------------------------------------------------------
@@ -248,5 +253,48 @@ namespace HRMS_Backend.Controllers
             }
 
         }
+
+        #endregion
+
+
+        #region ExpencesStatus
+
+
+        [HttpGet("GetExpenseStatus")]
+        public async Task<IActionResult> GetExpenseStatus(int userId)
+        {
+            var data = await _expenseStatusService.GetExpenseStatus(userId);
+            return Ok(data);
+        }
+
+        [HttpPost("CreateExpenseStatus")]
+        public async Task<IActionResult> CreateExpenseStatus([FromBody] ExpenseStatusDto dto)
+        {
+            var result = await _expenseStatusService.CreateExpenseStatus(dto);
+            return Ok(result);
+        }
+
+        [HttpPut("UpdateExpenseStatus")]
+        public async Task<IActionResult> UpdateExpenseStatus([FromBody] ExpenseStatusDto dto)
+        {
+            var result = await _expenseStatusService.UpdateExpenseStatus(dto);
+
+            if (result == null)
+                return NotFound();
+
+            return Ok(result);
+        }
+
+        [HttpDelete("DeleteExpenseStatus/{id}")]
+        public async Task<IActionResult> DeleteExpenseStatus(int id)
+        {
+            var result = await _expenseStatusService.DeleteExpenseStatus(id);
+
+            if (!result)
+                return NotFound();
+
+            return Ok();
+        }
+        #endregion
     }
 }
