@@ -3,6 +3,7 @@ using BusinessLayer.DTOs;
 using BusinessLayer.Interfaces;
 using DataAccessLayer.DBContext;
 using DataAccessLayer.Repositories.GeneralRepository;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,10 +15,12 @@ namespace BusinessLayer.Implementations
     public class PolicyCategoryService: IPolicyCategoryService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly HRMSContext _context;
 
-        public PolicyCategoryService(IUnitOfWork unitOfWork)
+        public PolicyCategoryService(IUnitOfWork unitOfWork, HRMSContext context)
         {
             _unitOfWork = unitOfWork;
+            _context = context;
         }
 
         public async Task<ApiResponse<IEnumerable<CreateUpdatePolicyCategoryDto>>> GetAll(int userId)
@@ -35,6 +38,9 @@ namespace BusinessLayer.Implementations
                 PolicyCategoryName = x.PolicyCategoryName,
                 Description = x.Description,
                 IsActive = x.IsActive,
+                CompanyName = x.CompanyId != null ? _context.Companies.Where(y => y.CompanyId == x.CompanyId).FirstOrDefault().CompanyName : null,
+                RegionName = x.RegionId != null ? _context.Regions.Where(y => y.RegionId == x.RegionId).FirstOrDefault().RegionName : null
+
             });
 
             return new ApiResponse<IEnumerable<CreateUpdatePolicyCategoryDto>>(dto, "Policy categories retrieved successfully.");
@@ -127,6 +133,19 @@ namespace BusinessLayer.Implementations
             await _unitOfWork.CompleteAsync();
 
             return new ApiResponse<string>("Deleted successfully.");
+        }
+
+        public async Task<IEnumerable<string>> GetByCompanyRegion(int companyId, int regionId)
+        {
+            var categories = await _context.PolicyCategories
+                .Where(x => x.CompanyId == companyId &&
+                            x.RegionId == regionId &&
+                            !x.IsDeleted &&
+                            x.IsActive)
+                .Select(x => x.PolicyCategoryName)
+                .ToListAsync();
+
+            return categories;
         }
 
     }

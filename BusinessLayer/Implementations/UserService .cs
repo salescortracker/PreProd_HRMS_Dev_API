@@ -5,6 +5,7 @@ using DataAccessLayer.DBContext;
 using DataAccessLayer.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using System.Data;
 using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
@@ -95,62 +96,124 @@ namespace BusinessLayer.Implementations
                 if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                     throw new ArgumentException("Username or password cannot be empty.");
 
-                var userData = await (
-    from u in _context.Users
-    join r in _context.RoleMasters on u.RoleId equals r.RoleId
-    join reg in _context.Regions on u.RegionId equals reg.RegionId
-    join c in _context.Companies on u.CompanyId equals c.CompanyId
-    join d in _context.Departments on u.DepartmentId equals d.DepartmentId into deptJoin
-    from d in deptJoin.DefaultIfEmpty()
-    join des in _context.Designations
-        on u.DepartmentId equals des.DesignationId into desJoin
-    from des in desJoin.DefaultIfEmpty()
+                var result = _context.Users.Where(x => x.Email == username && x.PasswordHash == password).FirstOrDefault();
+                
+                if (result.RoleId == 0)
+                {
+                   var roledata   = await (
+   from u in _context.Users
+       // join r in _context.RoleMasters on u.RoleId equals r.RoleId
+   join reg in _context.Regions on u.RegionId equals reg.RegionId
+   join c in _context.Companies on u.CompanyId equals c.CompanyId
+   join d in _context.Departments on u.DepartmentId equals d.DepartmentId into deptJoin
+   from d in deptJoin.DefaultIfEmpty()
+   join des in _context.Designations
+       on u.DepartmentId equals des.DesignationId into desJoin
+   from des in desJoin.DefaultIfEmpty()
 
 
-    join rm in _context.Users on u.ReportingTo equals rm.UserId into managerJoin
-    from rm in managerJoin.DefaultIfEmpty()
+   join rm in _context.Users on u.ReportingTo equals rm.UserId into managerJoin
+   from rm in managerJoin.DefaultIfEmpty()
 
-    where u.Email == username && u.PasswordHash == password
+   where u.Email == username && u.PasswordHash == password
 
-    select new
-    {
-        u.UserId,
-        u.Email,
-        u.FullName,
+   select new
+   {
+       u.UserId,
+       u.Email,
+       u.FullName,
 
-        RoleName = r.RoleName,
-        RegionName = reg.RegionName,
-        CompanyName = c.CompanyName,
+       // RoleName = r.RoleName,
+       RegionName = reg.RegionName,
+       CompanyName = c.CompanyName,
 
-        roleId = u.RoleId,
-        companyId = u.CompanyId,
-        regionId = u.RegionId,
-        employeeCode = u.EmployeeCode,
+       roleId = u.RoleId,
+       companyId = u.CompanyId,
+       regionId = u.RegionId,
+       employeeCode = u.EmployeeCode,
 
-        DepartmentId = u.DepartmentId,
-        DepartmentName = d.DepartmentName, // 🔥 STRING
+       DepartmentId = u.DepartmentId,
+       DepartmentName = d.DepartmentName, // 🔥 STRING
 
-        ReportingManagerId = u.ReportingTo,
-        ReportingManagerName = rm.FullName, // 🔥 STRING
+       ReportingManagerId = u.ReportingTo,
+       ReportingManagerName = rm.FullName, // 🔥 STRING
 
-        DesignationId = u.Designation,
-        designation = u.Designation, // if stored as string in Users table
+       DesignationId = u.Designation,
+       designation = u.Designation, // if stored as string in Users table
 
-        personalEmail = u.Email,
-        userLoginStatus = u.Userloginstatus,
-        paswordChanged = u.Passwordchanged,
-        userCompanyId=u.UserCompanyId
-    })
+       personalEmail = u.Email,
+       userLoginStatus = u.Userloginstatus,
+       paswordChanged = u.Passwordchanged,
+       userCompanyId = u.UserCompanyId
+   })
 .FirstOrDefaultAsync();
+                    var loginStatus = await _context.Users.FirstOrDefaultAsync(u => u.Email == username);
+                    loginStatus.Userloginstatus = true;
+                    _context.Users.Update(loginStatus);
+                    await _context.SaveChangesAsync();
+
+                    return roledata;
+
+                }
+                else
+                {
+                    var userData = await (
+        from u in _context.Users
+        join r in _context.RoleMasters on u.RoleId equals r.RoleId
+        join reg in _context.Regions on u.RegionId equals reg.RegionId
+        join c in _context.Companies on u.CompanyId equals c.CompanyId
+        join d in _context.Departments on u.DepartmentId equals d.DepartmentId into deptJoin
+        from d in deptJoin.DefaultIfEmpty()
+        join des in _context.Designations
+            on u.DepartmentId equals des.DesignationId into desJoin
+        from des in desJoin.DefaultIfEmpty()
 
 
+        join rm in _context.Users on u.ReportingTo equals rm.UserId into managerJoin
+        from rm in managerJoin.DefaultIfEmpty()
 
-                var loginStatus = await _context.Users.FirstOrDefaultAsync(u => u.Email == username);
-                loginStatus.Userloginstatus = true;
-                _context.Users.Update(loginStatus);
-                await _context.SaveChangesAsync();
+        where u.Email == username && u.PasswordHash == password
 
-                return userData;
+        select new
+        {
+            u.UserId,
+            u.Email,
+            u.FullName,
+
+            RoleName = r.RoleName,
+            RegionName = reg.RegionName,
+            CompanyName = c.CompanyName,
+
+            roleId = u.RoleId,
+            companyId = u.CompanyId,
+            regionId = u.RegionId,
+            employeeCode = u.EmployeeCode,
+
+            DepartmentId = u.DepartmentId,
+            DepartmentName = d.DepartmentName, // 🔥 STRING
+
+            ReportingManagerId = u.ReportingTo,
+            ReportingManagerName = rm.FullName, // 🔥 STRING
+
+            DesignationId = u.Designation,
+            designation = u.Designation, // if stored as string in Users table
+
+            personalEmail = u.Email,
+            userLoginStatus = u.Userloginstatus,
+            paswordChanged = u.Passwordchanged,
+            userCompanyId = u.UserCompanyId
+        })
+    .FirstOrDefaultAsync();
+                    var loginStatus = await _context.Users.FirstOrDefaultAsync(u => u.Email == username);
+                    loginStatus.Userloginstatus = true;
+                    _context.Users.Update(loginStatus);
+                    await _context.SaveChangesAsync();
+
+                    return userData;
+
+                }
+
+               
             }
             catch (ArgumentException ex)
             {

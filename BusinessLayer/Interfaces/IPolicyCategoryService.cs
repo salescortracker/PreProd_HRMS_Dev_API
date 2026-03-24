@@ -15,6 +15,7 @@ namespace BusinessLayer.Interfaces
         Task<ApiResponse<string>> CreateAsync(CreateUpdatePolicyCategoryDto dto);
         Task<ApiResponse<string>> UpdateAsync(CreateUpdatePolicyCategoryDto dto);
         Task<ApiResponse<string>> DeleteAsync(int id);
+        Task<IEnumerable<string>> GetByCompanyRegion(int companyId, int regionId);
 
     }
 }

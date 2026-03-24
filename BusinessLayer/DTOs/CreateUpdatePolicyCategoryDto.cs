@@ -15,5 +15,7 @@ namespace BusinessLayer.DTOs
         public string PolicyCategoryName { get; set; } = string.Empty;
         public string? Description { get; set; }
         public bool IsActive { get; set; }
+        public string? CompanyName { get; set; }
+        public string? RegionName { get; set; }
     }
 }
