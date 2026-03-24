@@ -1,4 +1,5 @@
 ﻿
+
 using BusinessLayer.Implementations;
 using BusinessLayer.Interfaces;
 using DataAccessLayer.DBContext;
@@ -97,6 +98,7 @@ builder.Services.AddScoped<IInterviewLevelService, InterviewLevelService>();
 builder.Services.AddScoped<ICompanyEventsService, CompanyEventsService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<ICompanyNewsCategoryService, CompanyNewsCategoryService>();
+builder.Services.AddScoped<PlanService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
