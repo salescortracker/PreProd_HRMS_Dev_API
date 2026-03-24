@@ -2558,5 +2558,22 @@ public class UpdateResignationStatusRequest
             return Ok(data);
         }
 
+
+
+        [HttpGet("GetEmployees")]
+        public IActionResult GetEmployees(int companyId, int regionId)
+        {
+            var employees = _context.Users
+                .Where(x => x.CompanyId == companyId && x.RegionId == regionId)
+                .Select(x => new
+                {
+                    x.UserId,
+                    x.FullName,
+                    x.EmployeeCode
+                })
+                .ToList();
+
+            return Ok(employees);
+        }
     }
 }
