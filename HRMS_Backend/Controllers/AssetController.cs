@@ -119,8 +119,31 @@ namespace HRMS_Backend.Controllers
                 Message = $"Asset {action}d successfully"
             });
         }
+
+        [HttpPost("assetsApproveReject")]
+        public async Task<IActionResult> AssetsApproveReject([FromBody] ApproveRejectAssetDto dto)
+        {
+            try
+            {
+                await _assetApprovalService.ApproveRejectAssetsAsync(dto);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Assets {dto.Action} successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+        }
         #endregion
 
-    
-}
+
+    }
 }
