@@ -60,29 +60,27 @@ namespace BusinessLayer.Implementations
                     var records = clockRecords
                         .Where(c =>
                             c.EmployeeCode == emp.EmployeeCode &&
+                            c.CompanyId == companyId &&
+                            c.RegionId == regionId &&
                             c.AttendanceDate == today)
                         .OrderBy(c => c.ActionTime)
                         .ToList();
 
                     var clockIn = records
-                        .Where(r => r.ActionType == "ClockIn")
-                        .Select(r => r.ActionTime)
-                        .FirstOrDefault();
+                       .FirstOrDefault(r => r.ActionType == "ClockIn")?.ActionTime;
 
                     var clockOut = records
-                        .Where(r => r.ActionType == "ClockOut")
-                        .Select(r => r.ActionTime)
-                        .LastOrDefault();
+                        .LastOrDefault(r => r.ActionType == "ClockOut")?.ActionTime;
 
-                    if (clockIn != default)
-                        clockInTime = clockIn.ToString("HH:mm");
+                    if (clockIn != null)
+                        clockInTime = clockIn.Value.ToString("HH:mm");
 
-                    if (clockOut != default)
-                        clockOutTime = clockOut.ToString("HH:mm");
+                    if (clockOut != null)
+                        clockOutTime = clockOut.Value.ToString("HH:mm");
 
-                    if (clockIn != default && clockOut != default)
+                    if (clockIn != null && clockOut != null)
                     {
-                        var duration = clockOut - clockIn;
+                        var duration = clockOut.Value - clockIn.Value;
 
                         grossTime = duration.ToString(@"hh\:mm");
 
