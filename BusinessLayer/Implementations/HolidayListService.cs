@@ -41,6 +41,28 @@ namespace BusinessLayer.Implementations
 
             return new ApiResponse<IEnumerable<HolidayListDto>>(dto, "Holiday List retrieved successfully.");
         }
+        // Get In Calender 
+
+        public async Task<ApiResponse<IEnumerable<HolidayListDto>>> GetAllInCalender(int companyId, int regionId)
+        {
+            var list = (await _unitOfWork.Repository<HolidayList>()
+                .FindAsync(x => !x.IsDeleted && x.CompanyId == companyId && x.RegionId == regionId))
+                .OrderByDescending(x => x.HolidayListId)
+                .ToList();
+
+            var dto = list.Select(x => new HolidayListDto
+            {
+                HolidayListID = x.HolidayListId,
+                CompanyID = x.CompanyId,
+                RegionID = x.RegionId,
+                HolidayListName = x.HolidayListName,
+                Date = x.Date,
+                IsActive = x.IsActive
+            });
+
+            return new ApiResponse<IEnumerable<HolidayListDto>>(dto, "Holiday List retrieved successfully.");
+        }
+
 
         // GET BY ID
         public async Task<ApiResponse<HolidayListDto?>> GetByIdAsync(int id)

@@ -40,6 +40,25 @@ namespace BusinessLayer.Implementations
             return new ApiResponse<IEnumerable<WeekoffDto>>(dto, "Weekoff retrieved successfully.");
         }
 
+        // Get Calender 
+        public async Task<ApiResponse<IEnumerable<WeekoffDto>>> GetAllWeekOffs(int companyId, int regionId)
+        {
+            var list = (await _unitOfWork.Repository<Weekoff>()
+                .FindAsync(x => !x.IsDeleted && x.CompanyId == companyId&& x.RegionId==regionId))
+                .OrderByDescending(x => x.WeekoffId)
+                .ToList();
+
+            var dto = list.Select(x => new WeekoffDto
+            {
+                WeekoffID = x.WeekoffId,
+                CompanyID = x.CompanyId,
+                RegionID = x.RegionId,
+                WeekoffDate = x.Weekoff1,
+                IsActive = x.IsActive
+            });
+
+            return new ApiResponse<IEnumerable<WeekoffDto>>(dto, "Weekoff retrieved successfully.");
+        }
         // GET BY ID
         public async Task<ApiResponse<WeekoffDto?>> GetByIdAsync(int id)
         {
