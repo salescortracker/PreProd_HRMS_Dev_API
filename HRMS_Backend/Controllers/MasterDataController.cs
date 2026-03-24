@@ -944,9 +944,9 @@ namespace HRMS_Backend.Controllers
         #endregion
         #region expenseCategory
         [HttpGet("GetexpenseCategoryAll")]
-        public async Task<IActionResult> GetexpenseCategoryAll(int companyId, int regionId)
+        public async Task<IActionResult> GetexpenseCategoryAll(int userId)
         {
-            var result = await _expensecategoryservice.GetAllAsync(companyId, regionId);
+            var result = await _expensecategoryservice.GetAllAsync(userId);
             return Ok(result);
         }
 
@@ -964,9 +964,12 @@ namespace HRMS_Backend.Controllers
             return Ok(result);
         }
 
-        [HttpPost("DeleteexpenseCategory")]
+        [HttpDelete("DeleteexpenseCategory")]
         public async Task<IActionResult> DeleteexpenseCategory([FromQuery] int id)
         {
+            if (id <= 0)
+                return BadRequest("Invalid ExpenseCategory ID.");
+
             var result = await _expensecategoryservice.DeleteAsync(id);
             return Ok(result);
         }

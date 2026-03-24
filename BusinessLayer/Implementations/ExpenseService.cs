@@ -258,7 +258,9 @@ namespace BusinessLayer.Implementations
                 .Select(x => new ExpenseCategoryDto
                 {
                     ExpenseCategoryID = x.ExpenseCategoryId,
-                    ExpenseCategoryName = x.ExpenseCategoryName
+                    ExpenseCategoryName = x.ExpenseCategoryName,
+                    CompanyId = x.CompanyId,
+                    RegionId = x.RegionId
                 })
                 .ToListAsync();
         }
